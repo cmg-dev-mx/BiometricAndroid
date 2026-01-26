@@ -2,7 +2,7 @@ package mx.dev.cmg.android.biometrics.helper.biometric
 
 import androidx.appcompat.app.AppCompatActivity
 import androidx.biometric.BiometricManager
-import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG
+import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_WEAK
 import androidx.biometric.BiometricPrompt
 import androidx.biometric.BiometricPrompt.PromptInfo
 import kotlinx.coroutines.channels.Channel
@@ -19,12 +19,13 @@ class BiometricPromptManager(
         description: String
     ) {
         val manager = BiometricManager.from(activity)
-        val authenticators = BIOMETRIC_STRONG
+        val authenticators = BIOMETRIC_WEAK
 
         val promptInfo = PromptInfo.Builder()
             .setTitle(title)
             .setDescription(description)
             .setAllowedAuthenticators(authenticators)
+            .setConfirmationRequired(false)
             .setNegativeButtonText("Cancel")
 
 
