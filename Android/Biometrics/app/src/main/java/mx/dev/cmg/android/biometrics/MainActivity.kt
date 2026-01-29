@@ -23,9 +23,11 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import dagger.hilt.android.AndroidEntryPoint
 import mx.dev.cmg.android.biometrics.helper.biometric.BiometricPromptManager
 import mx.dev.cmg.android.biometrics.ui.theme.BiometricsTheme
 
+@AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
 
     private val promptManager by lazy {
