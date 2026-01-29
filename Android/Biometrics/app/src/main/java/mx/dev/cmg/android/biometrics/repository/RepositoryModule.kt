@@ -4,6 +4,8 @@ import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import mx.dev.cmg.android.biometrics.repository.biometric.BiometricRepository
+import mx.dev.cmg.android.biometrics.repository.biometric.BiometricRepositoryImpl
 import mx.dev.cmg.android.biometrics.repository.session.SessionRepository
 import mx.dev.cmg.android.biometrics.repository.session.SessionRepositoryImpl
 
@@ -13,4 +15,7 @@ abstract class RepositoryModule {
 
     @Binds
     abstract fun bindSessionRepository(impl: SessionRepositoryImpl): SessionRepository
+
+    @Binds
+    abstract fun bindBiometricRepository(impl: BiometricRepositoryImpl): BiometricRepository
 }

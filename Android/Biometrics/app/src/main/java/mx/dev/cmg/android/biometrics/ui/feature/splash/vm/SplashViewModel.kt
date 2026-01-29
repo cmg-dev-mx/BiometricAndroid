@@ -10,13 +10,15 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
+import mx.dev.cmg.android.biometrics.repository.biometric.BiometricRepository
 import mx.dev.cmg.android.biometrics.repository.session.SessionRepository
 import javax.inject.Inject
 import kotlin.time.Duration.Companion.seconds
 
 @HiltViewModel
 class SplashViewModel @Inject constructor(
-    private val sessionRepository: SessionRepository
+    private val sessionRepository: SessionRepository,
+    private val biometricRepository: BiometricRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SplashUiState())
@@ -26,17 +28,31 @@ class SplashViewModel @Inject constructor(
     val sideEffect = _sideEffect.receiveAsFlow()
 
     init {
-        validateUserAlreadyLogged()
+        viewModelScope.launch {
+            delay(2.seconds)
+            validateUserAlreadyLogged()
+        }
     }
 
     private fun validateUserAlreadyLogged() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
-            delay(2.seconds)
-            _uiState.value = _uiState.value.copy(isLoading = false)
 
-            // TODO Not yet implemented
-            _sideEffect.send(SplashSideEffect.NavigateToLogin)
+            sessionRepository.isUserAlreadyLogged().onSuccess { isLogged ->
+                if (isLogged) {
+                    biometricRepository.isUserEnrolled().onSuccess { isEnrolled ->
+                        if (isEnrolled) {
+                            _sideEffect.send(SplashSideEffect.ShowBiometricPrompt)
+                        } else {
+                            _sideEffect.send(SplashSideEffect.NavigateToHome)
+                        }
+                    }
+                } else {
+                    _sideEffect.send(SplashSideEffect.NavigateToLogin)
+                }
+            }
+
+            _uiState.value = _uiState.value.copy(isLoading = false)
         }
     }
 }

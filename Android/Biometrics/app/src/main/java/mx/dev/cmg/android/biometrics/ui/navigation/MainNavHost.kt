@@ -1,10 +1,12 @@
 package mx.dev.cmg.android.biometrics.ui.navigation
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
@@ -31,6 +33,7 @@ data object Home: NavKey
 
 @Composable
 fun MainNavHost(modifier: Modifier = Modifier) {
+    val context = LocalContext.current
     val backStack = rememberNavBackStack(Splash)
 
     NavDisplay(
@@ -56,6 +59,10 @@ fun MainNavHost(modifier: Modifier = Modifier) {
                             is SplashSideEffect.NavigateToHome -> {
                                 backStack.clear()
                                 backStack.add(Home)
+                            }
+                            is SplashSideEffect.ShowBiometricPrompt -> {
+                                // TODO Handle biometric prompt navigation if needed
+                                Toast.makeText(context, "Show Biometric Prompt", Toast.LENGTH_SHORT).show()
                             }
                         }
                     }
