@@ -18,6 +18,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -25,6 +26,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import dagger.hilt.android.AndroidEntryPoint
 import mx.dev.cmg.android.biometrics.helper.biometric.BiometricPromptManager
+import mx.dev.cmg.android.biometrics.ui.navigation.MainNavHost
 import mx.dev.cmg.android.biometrics.ui.theme.BiometricsTheme
 
 @AndroidEntryPoint
@@ -39,63 +41,75 @@ class MainActivity : AppCompatActivity() {
         enableEdgeToEdge()
         setContent {
             BiometricsTheme {
-                Surface(
-                    modifier = Modifier.systemBarsPadding().fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    val biometricResult by promptManager.promptResults.collectAsState(initial = null)
+                MainNavHost(
+                    modifier = Modifier.systemBarsPadding()
+                        .fillMaxSize()
+                )
+            }
+        }
+    }
+}
 
-                    val enrollLauncher = rememberLauncherForActivityResult(
-                        contract = ActivityResultContracts.StartActivityForResult(),
-                        onResult = {
-                            println("Activity Result: $it")
-                        }
-                    )
+@Composable
+private fun BaseBiometrics(
+    promptManager: BiometricPromptManager
+) {
+    Surface(
+        modifier = Modifier
+            .systemBarsPadding()
+            .fillMaxSize(),
+        color = MaterialTheme.colorScheme.background
+    ) {
+        val biometricResult by promptManager.promptResults.collectAsState(initial = null)
 
-                    LaunchedEffect(biometricResult) {
-                        if (biometricResult is BiometricPromptManager.BiometricResult.AuthenticationNotSet) {
-                            if (Build.VERSION.SDK_INT >= 30) {
-                                val enrollIntent = Intent(Settings.ACTION_BIOMETRIC_ENROLL).apply {
-                                    putExtra(
-                                        Settings.EXTRA_BIOMETRIC_AUTHENTICATORS_ALLOWED,
-                                        BIOMETRIC_STRONG
-                                    )
-                                }
-                                enrollLauncher.launch(enrollIntent)
-                            }
-                        }
+        val enrollLauncher = rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.StartActivityForResult(),
+            onResult = {
+                println("Activity Result: $it")
+            }
+        )
+
+        LaunchedEffect(biometricResult) {
+            if (biometricResult is BiometricPromptManager.BiometricResult.AuthenticationNotSet) {
+                if (Build.VERSION.SDK_INT >= 30) {
+                    val enrollIntent = Intent(Settings.ACTION_BIOMETRIC_ENROLL).apply {
+                        putExtra(
+                            Settings.EXTRA_BIOMETRIC_AUTHENTICATORS_ALLOWED,
+                            BIOMETRIC_STRONG
+                        )
                     }
-
-                    Column(
-                        modifier = Modifier.fillMaxSize(),
-                        verticalArrangement = Arrangement.Center,
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Button(
-                            onClick = {
-                                promptManager.showBiometricPrompt(
-                                    title = "Sample prompt",
-                                    description = "Authenticate to proceed"
-                                )
-                            }
-                        ) {
-                            Text("Authenticate")
-                        }
-
-                        biometricResult?.let { result ->
-                            Text(
-                                text = when(result) {
-                                    is BiometricPromptManager.BiometricResult.AuthenticationError -> result.error
-                                    BiometricPromptManager.BiometricResult.AuthenticationFailed -> "Authentication Failed"
-                                    BiometricPromptManager.BiometricResult.AuthenticationNotSet -> "Authentication Not Set"
-                                    BiometricPromptManager.BiometricResult.AuthenticationSuccess -> "Authentication Success"
-                                    BiometricPromptManager.BiometricResult.FeatureUnavailable -> "Feature Unavailable"
-                                    BiometricPromptManager.BiometricResult.HardwareUnavailable -> "Hardware Unavailable"
-                                }
-                            )
-                        }
-                    }
+                    enrollLauncher.launch(enrollIntent)
                 }
+            }
+        }
+
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Button(
+                onClick = {
+                    promptManager.showBiometricPrompt(
+                        title = "Sample prompt",
+                        description = "Authenticate to proceed"
+                    )
+                }
+            ) {
+                Text("Authenticate")
+            }
+
+            biometricResult?.let { result ->
+                Text(
+                    text = when (result) {
+                        is BiometricPromptManager.BiometricResult.AuthenticationError -> result.error
+                        BiometricPromptManager.BiometricResult.AuthenticationFailed -> "Authentication Failed"
+                        BiometricPromptManager.BiometricResult.AuthenticationNotSet -> "Authentication Not Set"
+                        BiometricPromptManager.BiometricResult.AuthenticationSuccess -> "Authentication Success"
+                        BiometricPromptManager.BiometricResult.FeatureUnavailable -> "Feature Unavailable"
+                        BiometricPromptManager.BiometricResult.HardwareUnavailable -> "Hardware Unavailable"
+                    }
+                )
             }
         }
     }

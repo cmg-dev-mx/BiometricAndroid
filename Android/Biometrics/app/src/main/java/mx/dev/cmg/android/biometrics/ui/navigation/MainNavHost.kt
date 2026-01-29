@@ -2,7 +2,11 @@ package mx.dev.cmg.android.biometrics.ui.navigation
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
@@ -13,6 +17,8 @@ import kotlinx.serialization.Serializable
 import mx.dev.cmg.android.biometrics.ui.feature.home.layout.HomeLayout
 import mx.dev.cmg.android.biometrics.ui.feature.login.layout.LoginLayout
 import mx.dev.cmg.android.biometrics.ui.feature.splash.layout.SplashLayout
+import mx.dev.cmg.android.biometrics.ui.feature.splash.vm.SplashSideEffect
+import mx.dev.cmg.android.biometrics.ui.feature.splash.vm.SplashViewModel
 
 @Serializable
 data object Splash: NavKey
@@ -36,7 +42,29 @@ fun MainNavHost(modifier: Modifier = Modifier) {
         backStack = backStack,
         entryProvider = entryProvider {
             entry<Splash> {
-                SplashLayout(modifier = Modifier.fillMaxSize())
+
+                val viewModel: SplashViewModel = hiltViewModel()
+                val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+                LaunchedEffect(Unit) {
+                    viewModel.sideEffect.collect { effect ->
+                        when(effect) {
+                            is SplashSideEffect.NavigateToLogin -> {
+                                backStack.clear()
+                                backStack.add(Login)
+                            }
+                            is SplashSideEffect.NavigateToHome -> {
+                                backStack.clear()
+                                backStack.add(Home)
+                            }
+                        }
+                    }
+                }
+
+                SplashLayout(
+                    modifier = Modifier.fillMaxSize(),
+                    uiState = uiState
+                )
             }
             entry<Login> {
                 LoginLayout(modifier = Modifier.fillMaxSize())
