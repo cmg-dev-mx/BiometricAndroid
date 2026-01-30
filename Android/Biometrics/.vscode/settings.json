@@ -1,0 +1,5 @@
+{
+  "kotlin.linting.enabled": false,
+  "kotlin.languageServer.enabled": false,
+  "kotlin.compiler.warn": false
+}
