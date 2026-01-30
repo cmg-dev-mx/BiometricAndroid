@@ -1,13 +1,14 @@
 package mx.dev.cmg.android.biometrics.source.shared
 
 import android.app.Application
+import android.content.Context
 import androidx.core.content.edit
 import javax.inject.Inject
 
-class LocalSourceImpl @Inject constructor(application: Application) : LocalSource {
+class LocalSourceImpl @Inject constructor(context: Context) : LocalSource {
 
     private val sharedPreferences by lazy {
-        application.getSharedPreferences("biometric_prefs", Application.MODE_PRIVATE)
+        context.getSharedPreferences("biometric_prefs", Application.MODE_PRIVATE)
     }
 
     override suspend fun clearAllData(): Result<Boolean> {
@@ -33,16 +34,16 @@ class LocalSourceImpl @Inject constructor(application: Application) : LocalSourc
     override suspend fun login(
         user: String,
         password: String
-    ): Result<Boolean> {
+    ): Result<Unit> {
         return try {
-            // Simulate login logic
-            val isValidUser = user == "testUser" && password == "testPassword"
-            if (isValidUser) {
+            if (user == "admin" && password == "admin") {
                 sharedPreferences.edit {
                     putBoolean("is_user_logged", true)
                 }
+                Result.success(Unit)
+            } else {
+                Result.failure(Exception("Invalid credentials"))
             }
-            Result.success(isValidUser)
         } catch (e: Exception) {
             Result.failure(e)
         }

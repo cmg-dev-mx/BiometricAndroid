@@ -18,18 +18,20 @@ import androidx.navigation3.ui.NavDisplay
 import kotlinx.serialization.Serializable
 import mx.dev.cmg.android.biometrics.ui.feature.home.layout.HomeLayout
 import mx.dev.cmg.android.biometrics.ui.feature.login.layout.LoginLayout
+import mx.dev.cmg.android.biometrics.ui.feature.login.vm.LoginSideEffect
+import mx.dev.cmg.android.biometrics.ui.feature.login.vm.LoginViewModel
 import mx.dev.cmg.android.biometrics.ui.feature.splash.layout.SplashLayout
 import mx.dev.cmg.android.biometrics.ui.feature.splash.vm.SplashSideEffect
 import mx.dev.cmg.android.biometrics.ui.feature.splash.vm.SplashViewModel
 
 @Serializable
-data object Splash: NavKey
+data object Splash : NavKey
 
 @Serializable
-data object Login: NavKey
+data object Login : NavKey
 
 @Serializable
-data object Home: NavKey
+data object Home : NavKey
 
 @Composable
 fun MainNavHost(modifier: Modifier = Modifier) {
@@ -45,24 +47,26 @@ fun MainNavHost(modifier: Modifier = Modifier) {
         backStack = backStack,
         entryProvider = entryProvider {
             entry<Splash> {
-
                 val viewModel: SplashViewModel = hiltViewModel()
                 val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
                 LaunchedEffect(Unit) {
                     viewModel.sideEffect.collect { effect ->
-                        when(effect) {
+                        when (effect) {
                             is SplashSideEffect.NavigateToLogin -> {
                                 backStack.clear()
                                 backStack.add(Login)
                             }
+
                             is SplashSideEffect.NavigateToHome -> {
                                 backStack.clear()
                                 backStack.add(Home)
                             }
+
                             is SplashSideEffect.ShowBiometricPrompt -> {
                                 // TODO Handle biometric prompt navigation if needed
-                                Toast.makeText(context, "Show Biometric Prompt", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, "Show Biometric Prompt", Toast.LENGTH_SHORT)
+                                    .show()
                             }
                         }
                     }
@@ -73,9 +77,33 @@ fun MainNavHost(modifier: Modifier = Modifier) {
                     uiState = uiState
                 )
             }
+
             entry<Login> {
-                LoginLayout(modifier = Modifier.fillMaxSize())
+                val viewModel: LoginViewModel = hiltViewModel()
+                val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+                LaunchedEffect(Unit) {
+                    viewModel.sideEffect.collect { effect ->
+                        when (effect) {
+                            is LoginSideEffect.NavigateToHome -> {
+                                backStack.clear()
+                                backStack.add(Home)
+                            }
+
+                            is LoginSideEffect.ErrorLoggingIn -> {
+                                Toast.makeText(context, effect.error, Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }
+                }
+
+                LoginLayout(
+                    modifier = Modifier.fillMaxSize(),
+                    uiState = uiState,
+                    onEvent = viewModel::onEvent
+                )
             }
+
             entry<Home> {
                 HomeLayout(modifier = Modifier.fillMaxSize())
             }

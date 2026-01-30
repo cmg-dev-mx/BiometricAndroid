@@ -1,6 +1,6 @@
 package mx.dev.cmg.android.biometrics.source
 
-import android.app.Application
+import android.content.Context
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -14,7 +14,7 @@ import mx.dev.cmg.android.biometrics.source.shared.LocalSourceImpl
 class SourceModule {
 
     @Provides
-    fun provideLocalSource(@ApplicationContext application: Application): LocalSource {
-        return LocalSourceImpl(application)
+    fun provideLocalSource(@ApplicationContext context: Context): LocalSource {
+        return LocalSourceImpl(context)
     }
 }
