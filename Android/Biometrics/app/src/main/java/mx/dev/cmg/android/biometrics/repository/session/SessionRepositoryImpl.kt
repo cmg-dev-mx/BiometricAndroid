@@ -16,4 +16,8 @@ class SessionRepositoryImpl @Inject constructor(
     ): Result<Unit> {
         return source.login(user, pass)
     }
+
+    override suspend fun logout(): Result<Unit> {
+        return source.clearAllData()
+    }
 }

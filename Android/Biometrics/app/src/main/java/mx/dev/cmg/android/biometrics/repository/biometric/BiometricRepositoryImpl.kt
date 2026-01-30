@@ -8,4 +8,8 @@ class BiometricRepositoryImpl @Inject constructor() : BiometricRepository {
         // TODO Not yet implemented
         return Result.success(false)
     }
+
+    override suspend fun setBiometricEnabled(enabled: Boolean): Result<Unit> {
+        TODO("Not yet implemented")
+    }
 }

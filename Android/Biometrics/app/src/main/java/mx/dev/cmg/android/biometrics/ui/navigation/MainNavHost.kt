@@ -17,6 +17,8 @@ import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import kotlinx.serialization.Serializable
 import mx.dev.cmg.android.biometrics.ui.feature.home.layout.HomeLayout
+import mx.dev.cmg.android.biometrics.ui.feature.home.vm.HomeSideEffect
+import mx.dev.cmg.android.biometrics.ui.feature.home.vm.HomeViewModel
 import mx.dev.cmg.android.biometrics.ui.feature.login.layout.LoginLayout
 import mx.dev.cmg.android.biometrics.ui.feature.login.vm.LoginSideEffect
 import mx.dev.cmg.android.biometrics.ui.feature.login.vm.LoginViewModel
@@ -105,7 +107,29 @@ fun MainNavHost(modifier: Modifier = Modifier) {
             }
 
             entry<Home> {
-                HomeLayout(modifier = Modifier.fillMaxSize())
+                val viewModel: HomeViewModel = hiltViewModel()
+                val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+                LaunchedEffect(Unit) {
+                    viewModel.sideEffect.collect { effect ->
+                        when (effect) {
+                            is HomeSideEffect.LogoutSuccess -> {
+                                backStack.clear()
+                                backStack.add(Login)
+                            }
+
+                            HomeSideEffect.ToggleBiometricSuccess -> {
+                                Toast.makeText(context, "Success", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }
+                }
+
+                HomeLayout(
+                    modifier = Modifier.fillMaxSize(),
+                    uiState = uiState,
+                    onEvent = viewModel::onEvent
+                )
             }
         }
     )

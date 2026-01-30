@@ -11,12 +11,12 @@ class LocalSourceImpl @Inject constructor(context: Context) : LocalSource {
         context.getSharedPreferences("biometric_prefs", Application.MODE_PRIVATE)
     }
 
-    override suspend fun clearAllData(): Result<Boolean> {
+    override suspend fun clearAllData(): Result<Unit> {
         return try {
-            val editor = sharedPreferences.edit()
-            editor.clear()
-            val success = editor.commit()
-            Result.success(success)
+            sharedPreferences.edit(commit = true) {
+                clear()
+            }
+            Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
         }
