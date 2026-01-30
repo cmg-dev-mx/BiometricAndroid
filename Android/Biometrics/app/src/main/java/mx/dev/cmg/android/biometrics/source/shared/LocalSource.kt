@@ -6,4 +6,5 @@ interface LocalSource {
     suspend fun login(user: String, password: String): Result<Unit>
     suspend fun isBiometricEnrolled(): Result<Boolean>
     suspend fun enrollBiometric(): Result<Boolean>
+    suspend fun disableBiometric(): Result<Unit>
 }

@@ -1,10 +1,18 @@
 package mx.dev.cmg.android.biometrics.ui.navigation
 
+import android.content.Intent
+import android.os.Build
+import android.provider.Settings
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AppCompatActivity
+import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -16,6 +24,7 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import kotlinx.serialization.Serializable
+import mx.dev.cmg.android.biometrics.helper.biometric.BiometricPromptManager
 import mx.dev.cmg.android.biometrics.ui.feature.home.layout.HomeLayout
 import mx.dev.cmg.android.biometrics.ui.feature.home.vm.HomeSideEffect
 import mx.dev.cmg.android.biometrics.ui.feature.home.vm.HomeViewModel
@@ -52,6 +61,46 @@ fun MainNavHost(modifier: Modifier = Modifier) {
                 val viewModel: SplashViewModel = hiltViewModel()
                 val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
+                val activity = context as? AppCompatActivity
+                val biometricPromptManager = remember(activity) {
+                    activity?.let { BiometricPromptManager(it) }
+                }
+
+                LaunchedEffect(biometricPromptManager) {
+                    biometricPromptManager?.promptResults?.collect { result ->
+                        when (result) {
+                            is BiometricPromptManager.BiometricResult.AuthenticationSuccess -> {
+                                backStack.clear()
+                                backStack.add(Home)
+                            }
+
+                            is BiometricPromptManager.BiometricResult.AuthenticationError -> {
+                                backStack.clear()
+                                backStack.add(Login)
+                            }
+
+                            BiometricPromptManager.BiometricResult.AuthenticationFailed -> {
+                                Toast.makeText(
+                                    context,
+                                    "Autenticación fallida. Intenta de nuevo.",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+
+                            BiometricPromptManager.BiometricResult.AuthenticationNotSet -> {
+                                backStack.clear()
+                                backStack.add(Home)
+                            }
+
+                            BiometricPromptManager.BiometricResult.HardwareUnavailable,
+                            BiometricPromptManager.BiometricResult.FeatureUnavailable -> {
+                                backStack.clear()
+                                backStack.add(Home)
+                            }
+                        }
+                    }
+                }
+
                 LaunchedEffect(Unit) {
                     viewModel.sideEffect.collect { effect ->
                         when (effect) {
@@ -66,9 +115,18 @@ fun MainNavHost(modifier: Modifier = Modifier) {
                             }
 
                             is SplashSideEffect.ShowBiometricPrompt -> {
-                                // TODO Handle biometric prompt navigation if needed
-                                Toast.makeText(context, "Show Biometric Prompt", Toast.LENGTH_SHORT)
-                                    .show()
+                                biometricPromptManager?.showBiometricPrompt(
+                                    title = "Autenticación biométrica",
+                                    description = "Usa tu huella o rostro para acceder"
+                                ) ?: run {
+                                    Toast.makeText(
+                                        context,
+                                        "Error al inicializar biometría",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                    backStack.clear()
+                                    backStack.add(Login)
+                                }
                             }
                         }
                     }
@@ -110,6 +168,17 @@ fun MainNavHost(modifier: Modifier = Modifier) {
                 val viewModel: HomeViewModel = hiltViewModel()
                 val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
+                val enrollLauncher = rememberLauncherForActivityResult(
+                    contract = ActivityResultContracts.StartActivityForResult(),
+                    onResult = {
+                        Toast.makeText(
+                            context,
+                            "Por favor, intenta habilitar la biometría nuevamente",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                )
+
                 LaunchedEffect(Unit) {
                     viewModel.sideEffect.collect { effect ->
                         when (effect) {
@@ -119,7 +188,31 @@ fun MainNavHost(modifier: Modifier = Modifier) {
                             }
 
                             HomeSideEffect.ToggleBiometricSuccess -> {
-                                Toast.makeText(context, "Success", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(
+                                    context,
+                                    "Biometría actualizada correctamente",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+
+                            HomeSideEffect.ShowBiometricEnrollment -> {
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                                    val enrollIntent =
+                                        Intent(Settings.ACTION_BIOMETRIC_ENROLL).apply {
+                                            putExtra(
+                                                Settings.EXTRA_BIOMETRIC_AUTHENTICATORS_ALLOWED,
+                                                BIOMETRIC_STRONG
+                                            )
+                                        }
+                                    enrollLauncher.launch(enrollIntent)
+                                } else {
+                                    val enrollIntent = Intent(Settings.ACTION_SECURITY_SETTINGS)
+                                    enrollLauncher.launch(enrollIntent)
+                                }
+                            }
+
+                            is HomeSideEffect.ShowError -> {
+                                Toast.makeText(context, effect.message, Toast.LENGTH_LONG).show()
                             }
                         }
                     }

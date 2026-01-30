@@ -3,9 +3,12 @@ package mx.dev.cmg.android.biometrics.source.shared
 import android.app.Application
 import android.content.Context
 import androidx.core.content.edit
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 
-class LocalSourceImpl @Inject constructor(context: Context) : LocalSource {
+class LocalSourceImpl @Inject constructor(
+    @ApplicationContext context: Context
+) : LocalSource {
 
     private val sharedPreferences by lazy {
         context.getSharedPreferences("biometric_prefs", Application.MODE_PRIVATE)
@@ -64,6 +67,17 @@ class LocalSourceImpl @Inject constructor(context: Context) : LocalSource {
                 putBoolean("is_biometric_enrolled", true)
             }
             Result.success(true)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun disableBiometric(): Result<Unit> {
+        return try {
+            sharedPreferences.edit {
+                putBoolean("is_biometric_enrolled", false)
+            }
+            Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
         }

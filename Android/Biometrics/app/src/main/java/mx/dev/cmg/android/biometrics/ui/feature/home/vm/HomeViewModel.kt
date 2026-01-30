@@ -24,6 +24,10 @@ class HomeViewModel @Inject constructor(
     private val _sideEffect = Channel<HomeSideEffect>(Channel.BUFFERED)
     val sideEffect = _sideEffect.receiveAsFlow()
 
+    init {
+        loadBiometricStatus()
+    }
+
     fun onEvent(event: HomeEvent) {
         when (event) {
             is HomeEvent.EnableBiometrics -> {
@@ -38,11 +42,38 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    private fun loadBiometricStatus() {
+        viewModelScope.launch {
+            biometricRepository.getBiometricEnabledStatus().onSuccess { isEnabled ->
+                _uiState.value = _uiState.value.copy(isBiometricEnabled = isEnabled)
+            }
+        }
+    }
+
     private fun toggleBiometrics(enable: Boolean) {
         viewModelScope.launch {
-            biometricRepository.setBiometricEnabled(enable).onSuccess {
-                _uiState.value = _uiState.value.copy(isBiometricEnabled = enable)
-                _sideEffect.send(HomeSideEffect.ToggleBiometricSuccess)
+            if (enable) {
+                biometricRepository.needsToEnrollBiometric().onSuccess { needsEnrollment ->
+                    if (needsEnrollment) {
+                        _sideEffect.send(HomeSideEffect.ShowBiometricEnrollment)
+                    } else {
+                        biometricRepository.setBiometricEnabled(true).onSuccess {
+                            _uiState.value = _uiState.value.copy(isBiometricEnabled = true)
+                            _sideEffect.send(HomeSideEffect.ToggleBiometricSuccess)
+                        }.onFailure { error ->
+                            _sideEffect.send(HomeSideEffect.ShowError(error.message ?: "Error al habilitar biometría"))
+                        }
+                    }
+                }.onFailure { error ->
+                    _sideEffect.send(HomeSideEffect.ShowError(error.message ?: "Error al verificar biometría"))
+                }
+            } else {
+                biometricRepository.setBiometricEnabled(false).onSuccess {
+                    _uiState.value = _uiState.value.copy(isBiometricEnabled = false)
+                    _sideEffect.send(HomeSideEffect.ToggleBiometricSuccess)
+                }.onFailure { error ->
+                    _sideEffect.send(HomeSideEffect.ShowError(error.message ?: "Error al deshabilitar biometría"))
+                }
             }
         }
     }
